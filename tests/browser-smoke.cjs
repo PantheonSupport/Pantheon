@@ -32,6 +32,8 @@ let ws;
     window.chrome.webview={addEventListener:(name,fn)=>handlers.push(fn),postMessage:text=>{
       const m=JSON.parse(text);messages.push(m);let data={};
       switch(m.action){
+        case 'updateCheck':data={canInstall:1,version:window.__host.updateVersion??'1.0-beta.4'};break;
+        case 'updateInstall':data={installing:1};break;
         case 'playControlsLoad':data={'slot-1':'1','slot-2':'2','slot-3':'3','slot-4':'4','slot-5':'5','slot-6':'6',upgrade:'R',sell:'X',cancel:'Q',targeting:'T','auto-upgrade':'K'};break;
         case 'playControlsSave':data=m.data;break;
         case 'loadPlacements':{const p=placementPlans[m.mode]||PantheonPlacements.defaults();for(const [id,map]of Object.entries(packages[m.mode].definition.maps||{}))if(!p.routes.some(r=>r.id===id))p.routes.push({...PantheonPlacements.route(id,map.name),parent:map.parent||''});placementPlans[m.mode]=p;data={profile:structuredClone(p),frames:{},playback:packages[m.mode].definition.playback||{}};break;}
@@ -50,7 +52,7 @@ let ws;
         case 'developerPickPoint':data={x:321,y:234};break;
         case 'macroSettingsLoad':{const specs=packages[m.data].definition.settings;data={specs,values:values[m.data]||Object.fromEntries(Object.entries(specs).map(([id,s])=>[id,structuredClone(s.default)]))};break;}
         case 'macroSettingsSave':values[m.mode]=m.data;data=structuredClone(m.data);break;
-        case 'macroExport':window.__host.exported=JSON.stringify({format:'pantheon-macro',version:1,id:m.data.id,definition:m.data.definition});data={copied:1};break;
+        case 'macroExport':window.__host.exportFormat=m.data.format;window.__host.exported=JSON.stringify({format:'pantheon-macro',version:1,id:m.data.id,definition:m.data.definition});data={copied:1};break;
         case 'macroImportPreview':{const p=JSON.parse(m.data),d=p.definition;data={id:p.id,name:d.name,game:d.game,icon:d.icon,sequences:Object.keys(d.workflows).length,targets:Object.keys(d.targets).length,settings:Object.keys(d.settings).length,entry:d.entry,runMode:d.runMode,exists:!!packages[p.id],actions:{}};break;}
         case 'macroInstall':{const p=JSON.parse(m.data);packages[p.id]={package:p.id,revision:1,definition:p.definition};data=packages[p.id];break;}
         case 'startEngine':state.engine={state:'running',active:1,logs:['Running']};break;
@@ -85,8 +87,9 @@ let ws;
   await click('#framework-new-macro');await until("!document.querySelector('#framework-content').hidden");
   assert.equal(await evaluate("document.querySelectorAll('[data-step-path]').length"),0);
   assert.equal(await evaluate("Object.keys(window.__host.packages['macro-created-test'].definition.targets).length"),0);
-  await change('#framework-macro-name','Community TD');await change('#framework-icon','raids');
-  assert.ok((await evaluate("document.querySelector('#framework-icon-preview').src")).endsWith('/assets/macros/Raids.png'));
+  await click('#framework-icon');await shot('macro-icon-picker.png');assert.equal(await evaluate("document.querySelectorAll('#macro-icon-grid button').length"),6);await evaluate("document.querySelector('#macro-icon-dialog').dispatchEvent(new Event('cancel',{cancelable:true}));document.querySelector('#macro-icon-dialog').close()");
+  await change('#framework-macro-name','Community TD');await click('#framework-icon');await click('[data-macro-icon=gems]');
+  assert.ok((await evaluate("document.querySelector('#framework-icon-preview').src")).endsWith('/assets/macros/Gems.png'));
   await change('#framework-setting-type','toggle');await click('#framework-add-setting');
   await click('#framework-add-step');
   await click('[data-step-command=\"point\"]');
@@ -139,6 +142,7 @@ let ws;
   assert.equal(await evaluate("document.querySelector('[data-step-path=\"0\"] [data-step-field=name]').value"),'Open stage menu');
   assert.equal(await evaluate("document.querySelector('[data-step-path=\"0\"]').open"),false);
   await change('#framework-new-action','repeat');await click('#framework-add-step');
+  await click('[data-step-path="3"] > summary');
   await evaluate("document.querySelector('[data-add-group-step=\"3.steps\"]').parentElement.querySelector('select').value='delay'");
   await click('[data-add-group-step=\"3.steps\"]');await click('[data-add-group-step=\"3.steps\"]');
   await change('[data-step-path=\"3.steps.0\"] [data-step-field=name]','First wait');await change('[data-step-path=\"3.steps.1\"] [data-step-field=name]','Second wait');
@@ -154,13 +158,13 @@ let ws;
   assert.ok(await evaluate("parseFloat(getComputedStyle(document.querySelector('[data-author-setting=setting-3] .setting-remove')).marginTop)>=20"));
   await click('[data-author-setting=setting-3] [data-author-command=delete]');
   await click('#framework-save');await until("document.querySelector('#framework-save').disabled");
-  await click('#framework-export-macro');await until("!!window.__host.exported");
+  await click('#framework-export-macro');assert.equal(await evaluate("document.querySelector('#framework-savebar').contains(document.querySelector('#framework-export-macro'))"),true);await click('[data-export-format=json]');await until("window.__host.exportFormat==='json'");await click('#framework-export-macro');await click('[data-export-format=text]');await until("window.__host.exportFormat==='text'");
   const exported=await evaluate('JSON.parse(window.__host.exported)');
   assert.equal(exported.definition.maps['test-map'].name,'Test map');assert.equal(exported.definition.maps['test-map-act-1'].parent,'test-map');assert.equal(exported.definition.settings['setting-2'].type,'key');assert.equal(exported.definition.settings['setting-2'].control,'upgrade');assert.equal(exported.definition.settings['setting-2'].default,'T');assert.ok(exported.definition.workflows.main.steps.some(s=>s.action==='placements'));assert.equal(exported.definition.workflows.main.steps[0].name,'Open stage menu');
-  assert.equal(exported.definition.icon,'raids');assert.equal(exported.definition.workflows.main.steps[0].action,'press');
+  assert.equal(exported.definition.icon,'gems');assert.equal(exported.definition.workflows.main.steps[0].action,'press');
   await evaluate("document.querySelector('#framework-icon').scrollIntoView({block:'center'})");await shot('release-icon-editor.png');
   await click('#developer-back');await until("!!document.querySelector('[data-launch]')");
-  assert.ok((await evaluate("document.querySelector('[data-launch]').closest('article').querySelector('img').src")).endsWith('/assets/macros/Raids.png'));
+  assert.ok((await evaluate("document.querySelector('[data-launch]').closest('article').querySelector('img').src")).endsWith('/assets/macros/Gems.png'));
   await click('[data-launch]');await until("!document.querySelector('#macro-dashboard').hidden");
   await click('[data-macro-key=setting-2]');await evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{key:'G',code:'KeyG',bubbles:true}));document.dispatchEvent(new KeyboardEvent('keyup',{key:'G',code:'KeyG',bubbles:true}))");await click('#save-authored-settings');
   assert.equal(await evaluate("window.__host.values['macro-created-test']['setting-2']"),'G');
@@ -228,7 +232,7 @@ let ws;
   await evaluate(`document.querySelector('#macro-import-text').value=${JSON.stringify(JSON.stringify(exported))};document.querySelector('#macro-import-text').dispatchEvent(new Event('input',{bubbles:true}));`);
   await click('#macro-import-preview');await until("!document.querySelector('#macro-import-install').disabled");await click('#macro-import-install');
   await until("document.querySelectorAll('[data-launch]').length===2");
-  assert.ok((await evaluate("document.querySelector('[data-launch=macro-imported-test]').closest('article').querySelector('img').src")).endsWith('/assets/macros/Raids.png'));
+  assert.ok((await evaluate("document.querySelector('[data-launch=macro-imported-test]').closest('article').querySelector('img').src")).endsWith('/assets/macros/Gems.png'));
   await shot('release-dashboard.png');
   await click('[data-launch=macro-imported-test]');await click('[data-page=loadout]');await until("!document.querySelector('.placement-content').inert");
   await click('#add-step');assert.equal(await evaluate("document.querySelector('#step-auto-fields').hidden"),true);
@@ -258,7 +262,7 @@ let ws;
   const stability=await evaluate(`(()=>{
     const list=document.querySelector('#framework-steps>.flow-step-list'),cards=[...list.children].filter(el=>el.matches('details'));
     const previous=cards.at(-2),card=cards.at(-1),input=card.querySelector('[data-step-field=name]'),duration=card.querySelector('[data-step-field=durationMs]');
-    previous.open=false;input.scrollIntoView({block:'center'});input.focus({preventScroll:true});const top=window.scrollY;
+    previous.open=false;card.open=true;input.scrollIntoView({block:'center'});input.focus({preventScroll:true});const top=window.scrollY;
     input.value='Upgrade wait';input.dispatchEvent(new Event('change',{bubbles:true}));
     const sameName=input.isConnected&&document.activeElement===input;duration.value='1.25';duration.dispatchEvent(new Event('change',{bubbles:true}));
     const unchanged=duration.isConnected&&!previous.open&&Math.abs(window.scrollY-top)<2;
@@ -277,15 +281,16 @@ let ws;
   await shot('anchored-editor-savebar.png');
 
   await click('#framework-add-target');
-  const freshTarget=await evaluate("document.querySelector('#framework-target').value");
+  const freshTarget=await evaluate("document.querySelector('#framework-target-list [aria-pressed=true]').dataset.libraryItem");
   assert.equal(await evaluate(`!!document.querySelector('[data-managed=panel] option[value="${freshTarget}"]')`),true);
   assert.equal(await evaluate(`!!document.querySelector('[data-feedback=money] option[value="${freshTarget}"]')`),true);
   await change('[data-managed=panel]',freshTarget);
   await activate('#framework-target-fields [data-target-field=name]');
   const renameStatus=await evaluate(`(()=>{const el=document.querySelector('#framework-target-fields [data-target-field=name]');el.focus({preventScroll:true});el.value='Selected unit panel';el.dispatchEvent(new Event('input',{bubbles:true}));const menu=document.querySelector('[data-managed=panel]');return {selected:menu.value,name:menu.selectedOptions[0].textContent,sameInput:el===document.activeElement&&el.isConnected};})()`);
   assert.deepEqual(renameStatus,{selected:freshTarget,name:'Selected unit panel',sameInput:true});
-  assert.equal(await evaluate(`document.querySelector('#framework-target option[value="${freshTarget}"]').textContent`),'Selected unit panel');
+  assert.equal(await evaluate(`document.querySelector('#framework-target-list [data-library-item="${freshTarget}"] strong').textContent`),'Selected unit panel');
 
+  await shot('developer-target-library.png');
   await click('#framework-capture-bounds');
   assert.equal(await evaluate("document.querySelector('[data-target-field=x]').value"),'150');
   assert.equal(await evaluate("document.querySelector('[data-target-field=width]').value"),'100');
@@ -299,7 +304,15 @@ let ws;
   await evaluate("document.querySelector('#component-guide-search').value='reward';document.querySelector('#component-guide-search').dispatchEvent(new Event('input',{bubbles:true}))");
   assert.equal(await evaluate("!!document.querySelector('#component-guide-dismiss')"),true);
   await click('[data-developer-tab=sequences]');
-  for(const action of ['click-wait','scroll-option','dismiss','setting-call']){
+  await change('#framework-new-action','ocr-input');await click('#framework-add-step');
+  await click('#framework-steps>.flow-step-list>details:last-child [data-step-command=ocr-region]');
+  await until("document.querySelector('#framework-steps>.flow-step-list>details:last-child [data-step-field=readX]').value==='150'");
+  assert.equal(await evaluate("document.querySelector('#framework-steps>.flow-step-list>details:last-child [data-step-field=width]').value"),'100');
+  await click('#framework-steps>.flow-step-list>details:last-child [data-step-command=point]');
+  await until("document.querySelector('#framework-steps>.flow-step-list>details:last-child [data-step-field=x]').value==='321'");
+  assert.equal(await evaluate("document.querySelector('#framework-steps>.flow-step-list>details:last-child [data-step-field=y]').value"),'234');
+  assert.equal(await evaluate("document.querySelector('#framework-steps>.flow-step-list>details:last-child [data-step-field=clear]').value"),'1');
+  for(const action of ['match-result','click-wait','scroll-option','dismiss','setting-call']){
     await change('#framework-new-action',action);await click('#framework-add-step');
     assert.equal(await evaluate(`document.querySelector('#framework-steps>.flow-step-list>details:last-child [data-step-field=action]').value`),action);
   }
@@ -336,6 +349,90 @@ let ws;
   assert.equal(await evaluate("document.querySelector('.swatches').closest('.setting-row').hidden"),false);
 
   await click('[data-theme-choice=midnight]');await click('[data-page=dashboard]');await click('#back-to-hub');await shot('midnight-theme-consistency.png');
+
+  await until("!document.querySelector('#update-indicator').hidden");
+  await click('#update-indicator');
+  await until("!document.querySelector('#page-settings').hidden");
+  assert.match(await evaluate("document.querySelector('#update-status').textContent"),/1\.0-beta\.4/);
+
+  await click('[data-page=developer]');
+  if (!await evaluate("document.querySelector('#framework-discard').disabled")) await click('#framework-discard');
+  await evaluate(`(()=>{
+    const d=structuredClone(window.__host.packages['macro-created-test'].definition);
+    d.name='Copy source';
+    d.targets={'copy-point':{kind:'point',name:'Source point',pattern:'',x:42,y:24,width:1,height:1,error0:0,error1:0,offsetX:0,offsetY:0}};
+    d.workflows={main:{name:'Source sequence',steps:[{id:'step-1',action:'click',name:'Copied click',target:'copy-point',button:'Left',timeoutMs:0,missing:'error'}]}};
+    window.__host.packages['macro-copy-source']={package:'macro-copy-source',revision:1,definition:d};
+  })()`);
+  for (const kind of ['targets','workflows','step']) {
+    await click('[data-library-menu='+(kind==='targets'?'targets':'workflows')+']');
+    await click('#editor-item-menu [data-editor-action='+(kind==='step'?'import-step':'import')+']');
+    await change('#macro-copy-source','macro-copy-source');
+    await until("!document.querySelector('#macro-copy-apply').disabled");
+    await click('#macro-copy-apply');
+    await until("!document.querySelector('#macro-copy-dialog').open");
+  }
+  await click('#framework-export-macro');await click('[data-export-format=text]');
+  await until("Object.values(JSON.parse(window.__host.exported).definition.workflows).some(f=>f.name==='Source sequence')");
+  const copied=await evaluate("JSON.parse(window.__host.exported).definition");
+  const copiedFlow=Object.values(copied.workflows).find(f=>f.name==='Source sequence');
+  assert.equal(copiedFlow.steps.length,2);
+  assert.notEqual(copiedFlow.steps[0].id,copiedFlow.steps[1].id);
+  for(const block of copiedFlow.steps) assert.equal(copied.targets[block.target].name,'Source point');
+  const firstStep='#framework-steps>.flow-step-list>details:first-child';
+  const stepState=()=>evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(firstStep)});return {open:el.open,selected:el.hasAttribute('data-step-selected')};})()`);
+  assert.deepEqual(await stepState(),{open:false,selected:false});
+  await click(firstStep+' > summary > strong');
+  assert.deepEqual(await stepState(),{open:true,selected:false});
+  await click(firstStep+' > summary > strong');
+  assert.deepEqual(await stepState(),{open:false,selected:false});
+  await evaluate(`document.querySelector(${JSON.stringify(firstStep+' > summary')}).dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:500,clientY:400}))`);
+  assert.deepEqual(await stepState(),{open:false,selected:true});
+  assert.equal(await evaluate("document.querySelector('#editor-item-menu').matches(':popover-open')"),true);
+  await evaluate("document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'c',ctrlKey:true,bubbles:true,cancelable:true}))");
+  await evaluate("document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'v',ctrlKey:true,bubbles:true,cancelable:true}))");
+  assert.equal(await evaluate("document.querySelectorAll('#framework-steps>.flow-step-list>details').length"),3);
+  await evaluate("document.querySelector('#framework-sequence-tabs').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))");
+  assert.deepEqual(await stepState(),{open:false,selected:false});
+  await click('#framework-add-flow');
+  await evaluate("document.querySelector('#framework-sequence-tabs [aria-selected=true]').dispatchEvent(new MouseEvent('dblclick',{bubbles:true}))");
+  await change('#editor-rename-input','New tab name');
+  await click('#editor-rename-form button[type=submit]');
+  assert.equal(await evaluate("document.querySelector('#framework-sequence-tabs [aria-selected=true]').textContent"),'New tab name');
+  await activate('#framework-target-search');
+  await evaluate("(()=>{const search=document.querySelector('#framework-target-search');search.value='Source point';search.dispatchEvent(new Event('input',{bubbles:true}));})()");
+  assert.ok(await evaluate("[...document.querySelectorAll('#framework-target-list button strong')].every(el=>el.textContent==='Source point')"));
+  await evaluate("document.querySelector('#framework-target-list button').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:300,clientY:250}))");
+  await click('#editor-item-menu [data-editor-action=rename]');
+  assert.equal(await evaluate("document.querySelector('#editor-rename-input').value"),'Source point');
+  await click('#editor-rename-cancel');
+  await click('#framework-discard');
+  await click('#update-indicator');
+  assert.equal(await evaluate("document.querySelector('#update-release-notes').hidden"),false);
+  await click('#update-release-notes');
+  await until("window.__host.messages.some(m=>m.action==='updateReleaseNotes')");
+  await click('#update-install');await click('#dialog-confirm');
+  await until("window.__host.messages.some(m=>m.action==='updateInstall')");
+  await evaluate("window.__host.updateVersion=''");
+  await click('#update-check');
+  await until("!document.querySelector('#update-status').hidden && document.querySelector('#update-status').textContent==='Pantheon is up to date.'");
+  assert.equal(await evaluate("document.querySelector('#update-install').hidden"),true);
+  assert.equal(await evaluate("document.querySelector('#update-release-notes').hidden"),true);
+
+  await call('Emulation.setDeviceMetricsOverride',{width:1100,height:780,deviceScaleFactor:1,mobile:false});
+  await evaluate("(()=>{const size=document.querySelector('#interface-size');size.value='110';size.dispatchEvent(new Event('input',{bubbles:true}));})()");
+  await until("document.documentElement.dataset.scale==='110'");
+  await evaluate("window.__host.updateVersion='1.0-beta.4'");
+  await click('#update-check');
+  await until("!document.querySelector('#update-install').hidden");
+  await evaluate("document.querySelector('#app-updates').scrollIntoView({block:'center'})");
+  assert.equal(await evaluate("document.querySelector('#app-updates').scrollWidth<=document.querySelector('#app-updates').clientWidth"),true);
+  await shot('beta3-updates-compact.png');
+  await click('[data-page=developer]');
+  await activate('#framework-target-search');
+  await evaluate("document.querySelector('#framework-target-library').scrollIntoView({block:'center'})");
+  assert.equal(await evaluate("document.querySelector('#framework-target-library').scrollWidth<=document.querySelector('#framework-target-library').clientWidth"),true);
+  await shot('beta3-targets-compact.png');
 
   assert.deepEqual(errors,[]);
   console.log('PASS: linked instance selection/moved coordinates, Reconfigure and optional auto upgrade, compact slots, corrected text/padding, key recording and modifier rejection, collapsible named steps/settings, root/nested drag/drop and cancellation, slot colours/counters, match dialog, map groups, sidebar developer tools, creator maps/key overrides, player screenshot/points/start setup, global controls, empty release, generic developer workspace, blank creation, bundled icon selection/export/import, settings/coordinate/key editing, dashboard controls and run lifecycle; no browser errors.');

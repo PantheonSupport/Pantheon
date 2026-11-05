@@ -1759,3 +1759,88 @@ nav>a.active,:root[data-theme]:not([data-theme=default]) .sidebar nav a.active{b
 .theme-swatch[data-theme-choice=midnight]{--theme-left:#172a46;--theme-right:#9ebeff}
 .theme-swatch[data-theme-choice=rose]{--theme-left:#503042;--theme-right:#e8a9c0}
 .theme-swatch[data-theme-choice=ember]{--theme-left:#503822;--theme-right:#e7b47a}
+
+.macro-icon-field{display:flex;flex-direction:column;gap:8px;color:var(--muted);font-size:14px}
+#framework-icon{width:100%;min-height:56px;justify-content:flex-start;color:var(--text)}
+#framework-icon-name{flex:1;text-align:left}
+#macro-icon-dialog{width:min(540px,calc(100vw - 48px));max-width:540px;max-height:calc(100vh - 60px);overflow-y:auto;background:var(--panel);border-color:var(--line)}
+.macro-icon-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.macro-icon-option{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:125px;padding:16px 8px;border:1px solid var(--line);border-radius:8px;background:var(--input);color:var(--text);font:inherit;font-size:14px;cursor:pointer}
+.macro-icon-option img{width:80px;height:56px;object-fit:contain}
+.macro-icon-option:hover{background:var(--raised);border-color:var(--accent)}
+.macro-icon-option[aria-pressed=true]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,var(--panel))}
+.macro-icon-option:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+.result-handler-section{padding:16px;border:1px solid var(--line);border-radius:6px;background:var(--panel);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.result-handler-section h4,.result-handler-section p{grid-column:1/-1;margin:0}.result-handler-section p{color:var(--muted);font-size:14px;line-height:1.5}.result-handler-section label{min-width:0}.framework-step-fields:has(.result-handler-section){display:flex;flex-direction:column;gap:14px}.result-handler-timing{margin-top:14px}.result-handler-timing summary{cursor:pointer;padding:10px 0}
+
+#macro-export-dialog{width:min(480px,calc(100vw - 48px));background:var(--panel);border-color:var(--line)}.macro-export-options{display:grid;gap:12px}.macro-export-options .button{display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;padding:18px;white-space:normal}.macro-export-options strong{font-size:16px}.macro-export-options span{font-size:14px;color:var(--muted);line-height:1.5}
+
+#macro-copy-dialog{width:min(610px,calc(100vw - 48px));max-width:610px;background:var(--panel);border-color:var(--line)}
+#macro-copy-dialog select{max-width:100%}
+#update-indicator{height:30px;padding:4px 10px;font-size:13px}
+#app-updates .setting-row {gap:14px 18px;padding:16px 0 0;flex-wrap:wrap}
+#app-updates .setting-row > div:first-child {flex:1 1 260px}
+#app-updates .setting-row p:first-child {margin-top:0}
+#app-updates .action-group {flex-wrap:wrap}
+#developer-mode-panel > .setting-row {border-top:0}
+#developer-mode-panel h2 {font-size:15px}
+#step-form > .setting-row {margin:0;padding:12px 0}
+#step-form > .setting-row .switch {margin:0}
+#app-updates #update-status{margin:6px 0 0;color:var(--text)}
+
+#framework-sequences {min-width:0}
+.sequence-browser {position:sticky;top:calc(var(--header-height) + var(--developer-tabs-height,65px));z-index:11;box-shadow:0 -3px 0 var(--panel);display:flex;align-items:center;gap:6px;padding:6px;background:var(--input);border:1px solid var(--line);border-radius:8px}
+.sequence-tabs {display:flex;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.sequence-tabs button {flex:0 0 auto;max-width:240px;min-height:38px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid transparent;border-radius:6px;padding:7px 14px;background:transparent;color:var(--muted);font:inherit;cursor:pointer}
+.sequence-tabs button:hover {background:var(--raised);color:var(--text)}
+.sequence-tabs [aria-selected=true] {background:var(--raised);border-color:var(--line);color:var(--text)}
+.sequence-browser .icon-button {flex:none;min-width:34px;min-height:34px}
+.editor-more {font-size:20px;line-height:1}.sequence-browser .editor-more {margin-left:auto}
+.sequence-add-row {margin:14px 0 0}
+.framework-step[data-step-selected] {border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.framework-step-top .fold-indicator {padding:5px}
+.framework-step-top .step-action-label {max-width:22%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sequence-step-body,.setting-block-body {padding:14px 18px 18px}
+.sequence-step-body > .developer-toolbar {margin:10px 0 14px}
+.flow-step-group > .developer-toolbar {margin-bottom:0}
+.developer-tab-panel label {min-width:0}
+.sequence-step-body label,.target-inspector label {display:flex;flex-direction:column;gap:7px;margin:6px 0 10px}
+.sequence-step-body label :is(input:not([type=checkbox]),select),.target-inspector label :is(input,select) {min-width:0;width:100%}
+.target-inspector .findtext-field {margin:16px 0}
+.developer-tab-panel .framework-fields {column-gap:14px}
+.target-library {display:grid;grid-template-columns:minmax(200px,250px) minmax(0,1fr);gap:16px;align-items:start}
+.target-rail,.target-inspector {min-width:0;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.target-rail {padding:12px}
+.target-inspector {padding:18px}
+.editor-list-heading {display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.editor-list-heading h3 {margin:0;font-size:16px}
+#framework-target-search {width:100%}
+#framework-target-list {max-height:480px;overflow:auto;display:flex;flex-direction:column;gap:4px;margin:10px 0;scrollbar-width:thin}
+.target-list-item {width:100%;display:flex;align-items:center;gap:10px;padding:10px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.target-list-item:hover {background:var(--raised)}
+.target-list-item[aria-pressed=true] {background:var(--raised);border-color:var(--accent)}
+.target-list-item svg {width:16px;height:16px;flex:none;color:var(--muted)}
+.target-list-item span {min-width:0}
+.target-list-item strong,.target-list-item small {display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.target-list-item small {margin-top:4px;color:var(--muted);font-size:12px}
+.editor-list-empty {padding:10px;color:var(--muted)}
+.editor-list-actions {display:flex;gap:2px}
+.target-identity,.target-coordinates {margin-bottom:10px}
+.target-tools {display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+#framework-references {margin:14px 0 0}
+#framework-references:empty {display:none}
+.findtext-field {display:flex;flex-direction:column;gap:8px;margin:16px 0}
+textarea.findtext-code,#developer-pattern {display:block;box-sizing:border-box;width:100%;min-width:0;min-height:105px;max-height:360px;padding:12px;resize:vertical;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-all;background:var(--input);color:var(--text);border:1px solid var(--line);border-radius:6px;font:13px/1.6 Consolas,monospace}
+.editor-item-menu {position:fixed;inset:auto;margin:0;min-width:210px;max-width:min(310px,calc(100vw - 16px));padding:5px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 30px #0006}
+.editor-item-menu button {display:block;width:100%;padding:8px 10px;text-align:left;border:0;border-radius:5px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.editor-item-menu button:hover,.editor-item-menu button:focus-visible {background:var(--raised)}
+.editor-item-menu [data-editor-action=delete] {border-top:1px solid var(--line);border-radius:0;margin-top:4px}
+#editor-rename-dialog form {min-width:min(360px,70vw)}
+
+@media (min-width:1250px) {.target-coordinates:has(label:nth-child(4)) {grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+.macro-editor-toolbar {align-items:center;gap:10px;margin:0 0 16px}
+.macro-editor-toolbar label {white-space:nowrap;max-width:100%;min-width:0}
+.macro-editor-toolbar select {width:clamp(150px,21vw,280px);min-width:0;text-overflow:ellipsis}
+#framework-steps :is(.framework-step,input,select,textarea) {scroll-margin-top:calc(var(--header-height) + var(--developer-tabs-height,65px) + 64px)}
+.compact .sidebar-version {display:none}

@@ -1,7 +1,32 @@
 #Requires AutoHotkey v2.0
 
 class WorkflowComponents {
+    static CleanText(text, step) {
+        text := Trim(RegExReplace(text, "[\x00-\x20]+", " "))
+        if step["filter"] == "digits" {
+            if RegExMatch(text, "[A-Za-z]")
+                return ""
+            text := RegExReplace(text, "[^0-9]")
+        } else if step["filter"] == "alphanumeric"
+            text := RegExReplace(text, "[^A-Za-z0-9 ]")
+        if step["stripSpaces"]
+            text := StrReplace(text, " ")
+        return StrLen(text) >= step["minLength"] && StrLen(text) <= step["maxLength"] ? text : ""
+    }
     static Execute(r, step, location) {
+        if step["action"] == "ocr-input" {
+            text := this.CleanText(r.Environment.ReadText(step), step)
+            r.Check()
+            if !StrLen(text) {
+                if step["missing"] == "skip"
+                    return
+                throw FlowImageError("OCR found no valid text. Check the capture region, filter and length limits (" location ").")
+            }
+            r.Environment.Click(step["x"], step["y"], "Left")
+            r.Wait(100)
+            r.Environment.TypeText(text, step["clear"])
+            return
+        }
         if step["action"] == "setting-call" {
             r.Execute(step["routes"][r.Values[step["setting"]]])
             return

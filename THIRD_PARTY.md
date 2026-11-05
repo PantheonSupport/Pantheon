@@ -21,3 +21,9 @@ thqby/ahk2_lib, pinned to `559839b58353e31ec90796d1c2609c8f40b721f2`.
 Wrapper/Promise/ComVar/JSON: `Lib/vendor/LICENSE` and source notices. Microsoft loader: `Lib/vendor/WEBVIEW2-NOTICE.md`.
 
 UI reference: [LeniLilac/expeditions-macro](https://github.com/LeniLilac/expeditions-macro). The hub independently implements the screenshot placement workflow and layout; no source code or media from that repository is included.
+
+## Windows OCR wrapper
+
+Descolada OCR, copied from the legacy bundled library. Source: https://github.com/Descolada/OCR
+
+MIT license retained in `Lib/vendor/OCR-LICENSE`; upstream source notices retained in `Lib/vendor/OCR.ahk`. Uses local Windows.Media.Ocr.

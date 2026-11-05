@@ -1,7 +1,7 @@
 (function(root) {
   'use strict';
   const catalog = [];
-  const macroIcons={pantheon:{name:'Pantheon',image:'assets/pantheon.png'},dungeons:{name:'Dungeons',image:'assets/macros/Dungeon.png'},progressive:{name:'Progressive',image:'assets/macros/Progressive.png'},raids:{name:'Raids',image:'assets/macros/Raids.png'},challenges:{name:'Challenges',image:'assets/macros/Challenge.png'},winter:{name:'Winter',image:'assets/macros/Winter.png'}};
+  const macroIcons={pantheon:{name:'Pantheon',image:'assets/pantheon.png'},dungeons:{name:'Dungeon',image:'assets/macros/Dungeon.png'},gems:{name:'Gems',image:'assets/macros/Gems.png'},gold:{name:'Gold',image:'assets/macros/Gold.png'},limit:{name:'Limit',image:'assets/macros/Limit.png'},summer:{name:'Summer',image:'assets/macros/Summer.png'}};
   const defaults = () => ({root:'',accent:'violet',theme:'default',compact:0,scale:100,selected:'',favorites:[],developer:0});
   function mode(id) { const m=catalog.find(m=>m.id===id); if(!m) throw Error('Unknown macro.'); return m; }
   function preferences(raw) {

@@ -1,6 +1,6 @@
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
-import json, re
+import hashlib, json, re
 
 root = Path(__file__).resolve().parents[1]
 version = re.search(r'Current := "([^"]+)"', (root/'Lib/Version.ahk').read_text(encoding='utf-8-sig')).group(1)
@@ -12,7 +12,7 @@ Install AutoHotkey v2 (64-bit) and Microsoft Edge WebView2 Runtime.
 Extract the complete folder, then run Pantheon.ahk.
 
 Raids is included. Configure your settings and placements before starting.
-To update, extract into a new folder and copy your existing data folder if you want to retain your preferences and placements. Local edits to a bundled macro take priority over its supplied version; back up/export those edits before replacing them to use an updated supplied macro.
+To update, use Settings > App updates. Pantheon restarts in the same folder and retains your data. Local edits to a bundled macro take priority over its supplied version; back up/export those edits before replacing them to use an updated supplied macro.
 
 Developer tools: enable Developer mode at the bottom of Settings. The Guide tab explains components and shows examples. Additional guides are in Lib/help.
 Themes are under Settings > Appearance.
@@ -29,6 +29,11 @@ for p in (root/'macros').glob('*.json'):
     files.append((p, 'Pantheon/macros/'+p.name))
 with ZipFile(output, 'w', ZIP_DEFLATED) as archive:
     archive.writestr('Pantheon/README.md', readme)
+    manifest = {'version': version, 'macros': {
+        path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+        for path, name in files if name.startswith('Pantheon/macros/')
+    }}
+    archive.writestr('Pantheon/Lib/release-manifest.json', json.dumps(manifest))
     for p, name in sorted(files):
         archive.write(p, name)
 with ZipFile(output) as archive:

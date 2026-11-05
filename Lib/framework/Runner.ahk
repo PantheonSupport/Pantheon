@@ -2,6 +2,7 @@
 
 #Include %A_LineFile%\..\Schema.ahk
 #Include %A_LineFile%\..\WorkflowComponents.ahk
+#Include %A_LineFile%\..\MatchResult.ahk
 
 
 
@@ -266,7 +267,7 @@ class FlowRunner {
     }
     ResultImages(steps, result) {
         for step in steps {
-            if step["action"] == "outcome" {
+            if step["action"] == "outcome" || step["action"] == "match-result" {
                 for field in ["victory", "defeat"]
                     if !result.Has(step[field])
                         result[step[field]] := true
@@ -385,7 +386,11 @@ class FlowRunner {
         this.Managed := 0
         if HasMethod(this.Environment, "Result")
             this.Environment.Result(!!won)
-        this.ExecuteSteps(won ? step["thenSteps"] : step["elseSteps"], location)
+        this.Environment.Trace("Match result", won ? "Victory" : "Defeat", "Recorded")
+        if step["action"] == "match-result"
+            MatchResult.Handle(this, step, !!won, location)
+        else
+            this.ExecuteSteps(won ? step["thenSteps"] : step["elseSteps"], location)
     }
     ConfigurePlacement(state, action, cfg, placing := false) {
         if placing || action["changeTargeting"] {
@@ -556,8 +561,8 @@ class FlowRunner {
 
                             this.Execute(step["workflow"])
 
-                case "click-wait", "scroll-option", "dismiss", "setting-call": WorkflowComponents.Execute(this, step, location)
-                case "outcome": this.Outcome(step, location)
+                case "ocr-input", "click-wait", "scroll-option", "dismiss", "setting-call": WorkflowComponents.Execute(this, step, location)
+                case "outcome", "match-result": this.Outcome(step, location)
                 case "if":
 
                     if step.Has("condition")

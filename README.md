@@ -1,4 +1,4 @@
-# Pantheon 1.0-beta.2
+# Pantheon 1.0-beta.3
 
 A Windows desktop launcher and visual macro editor for Roblox tower defence games. Macros are validated JSON configurations, run by a shared AutoHotkey engine.
 
@@ -14,7 +14,7 @@ This beta includes the Raids macro for testing. Configure your stage settings an
 
 The editor supports clicks, coordinate picking, key presses and holds, walking, scrolling, delays, FindText checks, conditions, retries, loops and reusable sequences. Create dropdowns, toggles, checkbox lists, numbers and ordered priorities to control those sequences. Tools also contains the screenshot placement editor, with teams and ordered Start Game, Place, Upgrade, Sell and Delay actions.
 
-Choose a bundled icon in the editor. **Copy macro configuration** includes that icon, settings definitions and defaults, targets and sequences. It excludes private saved selections and connection credentials. New exports include the minimum compatible Pantheon version; importing requires that version or newer. Another user can paste it into **Import macro**, review it, and add it to their dashboard.
+Choose a bundled icon in the editor. **Export macro** saves a JSON file or copies the configuration as plain text. Exports include the icon, settings definitions and defaults, targets and sequences. Private selections and connection credentials stay local. An exported macro requires the exporting Pantheon version or newer. Paste the configuration into **Import macro** to review it and add it to the dashboard.
 
 See [Macro authoring](docs/MACRO_AUTHORING.md) for capture, settings, stage selection and sharing instructions.
 
@@ -48,7 +48,7 @@ Old game-specific scripts and reconnect routines are not included. Define naviga
 
 Run `node --test tests/*.test.cjs`, `node tests/browser-smoke.cjs`, and the `.test.ahk` fixtures with AutoHotkey v2. Native fixtures use temporary test windows and are distinct from live gameplay testing. See [VERIFICATION.md](VERIFICATION.md).
 
-`python scripts/package.py` builds `dist/Pantheon.zip` with runtime files, supplied definitions, documentation and required notices. Tests, scripts, private data, logs and screenshots are excluded. Archive integrity is checked locally. The packaging script does not publish releases.
+`python scripts/package_testers.py` builds the versioned release ZIP in `dist` with runtime files, supplied definitions, documentation and required notices. This ZIP supports in-place updates from [Pantheon releases](https://github.com/PantheonSupport/Pantheon/releases). Tests, scripts, private data, logs and screenshots are excluded. Archive integrity is checked locally. The packaging script does not publish releases.
 
 Original Pantheon icons and vendored notices are retained. See [THIRD_PARTY.md](THIRD_PARTY.md).
 

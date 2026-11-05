@@ -9,9 +9,12 @@
       this.nav=document.createElement('div');this.nav.className='developer-tabs';this.nav.setAttribute('role','tablist');this.nav.setAttribute('aria-label','Developer tools sections');
       for(const [id,label] of tabs){const button=document.createElement('button');button.className='developer-tab';button.type='button';button.dataset.developerTab=id;button.id='developer-tab-'+id;button.textContent=label;button.setAttribute('role','tab');button.setAttribute('aria-controls','developer-panel-'+id);this.nav.append(button);const panel=document.createElement('section');panel.id='developer-panel-'+id;panel.dataset.developerPanel=id;panel.className='developer-tab-panel';panel.setAttribute('role','tabpanel');panel.setAttribute('aria-labelledby',button.id);this.panels[id]=panel;(id==='capture'||id==='guide'?tools:content).append(panel);}
       tools.insertBefore(this.nav,framework);
+      new ResizeObserver(()=>{
+        tools.style.setProperty('--developer-tabs-height',this.nav.offsetHeight+'px');
+      }).observe(this.nav);
       this.panels.macro.append($('framework-macro-name').closest('.framework-fields'),content.querySelector('.flow-settings-author'));
-      this.panels.images.append($('framework-target').closest('section'));
-      this.panels.sequences.append($('framework-reload').closest('.panel-top'),$('framework-flow').closest('section'));
+      this.panels.images.append($('framework-target-library'));
+      this.panels.sequences.append($('framework-reload').closest('.panel-top'),$('framework-sequences'));
       for(const id of ['play-maps','play-target-order','play-managed-upgrades','play-placement-feedback'])this.panels.placement.append($(id).closest('section'));
       this.panels.capture.append(...captures);layout.remove();content.append($('framework-savebar'));
       this.panels.guide.innerHTML='<div class="guide-heading"><h2>Component guide</h2><label>Find a component<input id="component-guide-search" type="search" placeholder="Search components and examples"></label></div><div class="guide-workflow"><h3>Typical match flow</h3><p>Enter the stage → wait for stage readiness → set the camera → run placements → wait for the match result → dismiss rewards → run the selected result sequence.</p><p>Images and saved points are created in Images. Player controls are created in Macro. Game detection, maps, money feedback and managed upgrades are configured in Placement. Fixed timing fields display seconds.</p></div><div id="component-guide-list"></div>';

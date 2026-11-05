@@ -6,7 +6,7 @@
 #Include %A_LineFile%\..\ManagedUpgrade.ahk
 #Include %A_LineFile%\..\PlacementFeedback.ahk
 class FlowSchema {
-    static Actions := ["click-point", "click", "click-setting", "move", "walk", "scroll", "wait", "delay", "press", "key", "call", "repeat", "for-setting", "if", "retry", "until", "stop", "camera", "placements", "outcome", "click-wait", "scroll-option", "dismiss", "setting-call"]
+    static Actions := ["click-point", "click", "click-setting", "move", "walk", "scroll", "wait", "delay", "press", "key", "call", "repeat", "for-setting", "if", "retry", "until", "stop", "camera", "placements", "outcome", "click-wait", "scroll-option", "dismiss", "setting-call", "ocr-input", "match-result"]
     static Keys(raw, allowed) {
         if !(raw is Map)
             throw ValueError("Expected a definition object.")
@@ -75,7 +75,7 @@ class FlowSchema {
     static Validate(raw) {
         this.Keys(raw, "version|game|mode|name|client|targets|workflows|settings|entry|runMode|icon|maps|controls|playback")
         if raw.Has("icon")
-            this.Enum(raw["icon"], ["pantheon", "dungeons", "progressive", "raids", "challenges", "winter"], "macro icon")
+            this.Enum(raw["icon"], ["pantheon", "dungeons", "gems", "gold", "limit", "summer", "progressive", "raids", "challenges", "winter"], "macro icon")
         if raw.Has("runMode")
             this.Enum(raw["runMode"], ["once", "repeat"], "run mode")
         this.Int(raw["version"], 1, 1, "Definition version")
@@ -205,6 +205,17 @@ class FlowSchema {
                     throw ValueError("Duplicate step identifier.")
                 ids[step["id"]] := true
                 switch step["action"] {
+                    case "ocr-input":
+                        this.Keys(step, "id|action|readX|readY|width|height|x|y|filter|stripSpaces|clear|minLength|maxLength|missing")
+                        this.Int(step["readX"], 0, 799, "OCR region X"), this.Int(step["readY"], 0, 599, "OCR region Y")
+                        this.Int(step["width"], 1, 800-step["readX"], "OCR region width")
+                        this.Int(step["height"], 1, 600-step["readY"], "OCR region height")
+                        this.Int(step["x"], 0, 799, "Textbox X"), this.Int(step["y"], 0, 599, "Textbox Y")
+                        this.Enum(step["filter"], ["digits", "alphanumeric", "text"], "OCR text filter")
+                        this.Int(step["stripSpaces"], 0, 1, "Remove spaces"), this.Int(step["clear"], 0, 1, "Replace textbox content")
+                        this.Int(step["minLength"], 1, 128, "Minimum text length")
+                        this.Int(step["maxLength"], step["minLength"], 128, "Maximum text length")
+                        this.Enum(step["missing"], ["error", "skip"], "OCR failure behaviour")
                     case "camera":
                         this.Keys(step, "id|action|zoomIn|zoomOut|tilt")
                         this.Int(step["zoomIn"], 1, 50, "Zoom in ticks"), this.Int(step["zoomOut"], 1, 50, "Zoom out ticks")
@@ -256,6 +267,37 @@ class FlowSchema {
                                 throw ValueError("Choose a sequence for option: " option["label"])
                             this.Reference(raw, step["routes"][option["value"]])
                         }
+                    case "match-result":
+                        this.Keys(step, "id|action|victory|defeat|dismiss|lobby|replay|next|lobbyReady|matchReady|victoryAction|defeatAction|victorySetting|defeatSetting|timeoutMs|menuTimeoutMs|transitionTimeoutMs|intervalMs")
+                        seen := Map()
+                        for field in ["victory", "defeat", "lobby", "lobbyReady", "matchReady", "replay", "next"] {
+                            id := step[field]
+                            if id == "" && (field == "replay" || field == "next")
+                                continue
+                            this.Target(raw, id)
+                            if raw["targets"][id]["kind"] != "pattern"
+                                throw ValueError("Match result " field " requires a captured image.")
+                            if seen.Has(id)
+                                throw ValueError("Use separate images for match result detection, buttons and destination screens.")
+                            seen[id] := true
+                        }
+                        if step["dismiss"] != ""
+                            this.Target(raw, step["dismiss"])
+                        for side in ["victory", "defeat"] {
+                            this.Enum(step[side "Action"], ["lobby", "replay", "next", "setting"], "After " side)
+                            if step[side "Action"] == "setting" {
+                                spec := FlowSettings.Spec(raw, step[side "Setting"])
+                                if spec["type"] != "select"
+                                    throw ValueError("Match result choices require a dropdown setting.")
+                                for option in spec["options"]
+                                    if option.Get("target", "") == "" || (option["target"] != step["lobby"] && option["target"] != step["replay"] && option["target"] != step["next"])
+                                        throw ValueError("Map each result setting option to the Lobby, Replay or Next stage button image.")
+                            }
+                        }
+                        this.Param(raw, step["timeoutMs"], 100, 3600000, "Match result timeout")
+                        this.Param(raw, step["menuTimeoutMs"], 100, 120000, "Reward dismissal timeout")
+                        this.Param(raw, step["transitionTimeoutMs"], 100, 180000, "Destination loading timeout")
+                        this.Param(raw, step["intervalMs"], 100, 5000, "Reward click interval")
                     case "outcome":
                         this.Keys(step, "id|action|victory|defeat|timeoutMs|thenSteps|elseSteps")
                         for field in ["victory", "defeat"] {

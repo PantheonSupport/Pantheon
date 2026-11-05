@@ -376,7 +376,7 @@ class MacroPackages {
 
         this.RequireDeveloper()
 
-        FlowSchema.Keys(raw, "id|definition")
+        FlowSchema.Keys(raw, "id|definition|format")
 
         p := this.Validate(Map("format", "pantheon-macro", "version", 1, "minPantheonVersion", PantheonVersion.Current, "id", raw["id"], "definition", raw["definition"]))
 
@@ -386,9 +386,28 @@ class MacroPackages {
 
             throw Error("Macro configuration exceeds 500 KB.")
 
-        A_Clipboard := text
-
-        return Map("copied", 1)
+        format := raw.Get("format", "text")
+        FlowSchema.Enum(format, ["text", "json"], "export format")
+        if format == "text" {
+            A_Clipboard := text
+            return Map("copied", 1)
+        }
+        path := FileSelect("S16", p["id"] ".json", "Export macro", "JSON configuration (*.json)")
+        if path == ""
+            return Map("cancelled", 1)
+        if !RegExMatch(path, "i)\.json$") {
+            path .= ".json"
+            if FileExist(path) && MsgBox("This JSON file already exists. Replace it?", "Export macro", "YesNo Icon? Default2") != "Yes"
+                return Map("cancelled", 1)
+        }
+        file := FileOpen(path, "w", "UTF-8-RAW")
+        if !file
+            throw Error("Could not open the selected file for export.")
+        try {
+            if file.Write(text) < StrPut(text, "UTF-8")-1
+                throw Error("The macro configuration could not be completely written.")
+        } finally file.Close()
+        return Map("saved", 1)
 
     }
 

@@ -1,6 +1,7 @@
 #Requires AutoHotkey v2.0
 
 #Include %A_LineFile%\..\..\vendor\FindText.ahk
+#Include %A_LineFile%\..\..\vendor\OCR.ahk
 #Include %A_LineFile%\..\..\vendor\Gdip_All.ahk
 
 
@@ -54,6 +55,31 @@ class RobloxFlowEnvironment {
 
         return Map("x", x-left+target["offsetX"], "y", y-top+target["offsetY"])
 
+    }
+
+    ReadText(step) {
+        this.Check()
+        WinGetClientPos(&left, &top, , , "ahk_id " this.Hwnd)
+        result := OCR.FromRect(left+step["readX"], top+step["readY"], step["width"], step["height"], , 2)
+        this.Check()
+        return result.Text
+    }
+
+    TypeText(text, clear) {
+        this.Check()
+        if clear {
+            try {
+                this.Key("Control", true)
+                this.Key("A", true)
+            } finally {
+                this.Key("A", false)
+                this.Key("Control", false)
+            }
+        }
+        for character in StrSplit(text) {
+            this.Check()
+            SendText(character)
+        }
     }
 
     Move(x, y) {

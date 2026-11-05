@@ -1,125 +1,93 @@
 # Authoring a macro
 
 
-
 Enable Developer mode at the bottom of Settings, then open Tools → Developer tools in the sidebar.
-
 
 
 ## Create the macro
 
 
-
 Choose New macro. A new definition has one empty Main sequence and no targets or settings. Set its name, game and bundled icon, choose its Starting sequence, and select Run once or Repeat main sequence. The macro gets its own dashboard entry. Definitions for authored macros use the shared runner rather than a generated AHK script.
-
 
 
 ## Pick coordinates and images
 
 
-
 Click coordinate and Move mouse steps have a Select coordinates button. It opens an 800 by 600 frozen Roblox capture with a visible SELECT COORDINATES banner, crosshair and X/Y tooltip. Move over the intended point and left click. The coordinates are written into that step. Escape cancels without changing the step. The game window is restored afterward.
-
 
 
 Capture target and Select region in Roblox use a CAPTURE IMAGE banner. Drag a rectangle around the icon or text. The FindText preview is generated from those pixels. Replacing a named image changes every step and setting option referencing it.
 
 
-
 Left click selects a point while the coordinate picker is open. Outside that picker, the optional live coordinate viewer uses it to copy its readout.
-
 
 
 ## Define settings
 
 
-
 Open Macro settings in the builder. Controls include toggles, single checkboxes, dropdowns, checkbox lists, ordered priority lists, bounded numbers, and single-key override settings. Give each control a visible name and a default.
-
 
 
 A dropdown option may point to a captured image or saved coordinate. Pick click point captures an option's position directly; the target selector can instead use a named FindText image.
 
 
-
 For example, make a Stage dropdown with Stage 1 and Stage 2. Pick the click point for each option, then add Click selected setting option and choose Stage. On the dashboard, selecting Stage 2 makes that step use Stage 2's mapped image or position. There is no AHK function to modify.
-
 
 
 ## Use flags and priorities
 
 
-
 An If conditions match, Retry sequence, Repeat until, or Wait for images group can contain settings checks as well as image checks. Add setting / flag selects a control. A Farm portals toggle can be checked against Enabled, with portal actions inside Then and normal progression inside Otherwise.
-
 
 
 Conditions support AND/OR groups, image present/absent, scalar equality/inequality, number comparisons, and list contains/does not contain.
 
 
-
 For shop priorities, make a Priority list, add the item options, and map each option to its image or click point. Add For each selected item and choose the list. Inside it, Click selected setting option clicks the current item, followed by the purchase/check steps you define. The dashboard's selected order determines iteration order. Checkbox lists use the same mechanism for selected items.
-
 
 
 Numeric step fields can bind to bounded Number settings. Only compatible bounds appear. A walking duration setting, for example, must stay within the walking step's permitted duration range. A run uses a validated settings snapshot; settings are not changed under an active sequence.
 
 
-
 ## Build and run the sequence
-
 
 
 Use the ordered step list and inline groups for clicks, walking, scrolling, delays, image waits, branches and retries. Press a key taps a key; Hold a key keeps it down for a duration. Stop macro ends the run normally, including when the main sequence is configured to repeat.
 
 
 
-Stage entry template creates a draft of the two clicks, diagonal walk, chamber retry, list scrolling, stage clicks, and load-in wait. Fill the coordinates and two required image captures. The template is a new sequence; choose it as Starting sequence in an authored macro or call it from the appropriate parent sequence.
-
-
 
 Save macro, return to the dashboard, select the authored macro and save its settings. Open the correct Roblox game before starting. The same Start/Stop button and key apply to all macros. Focus loss, cancellation and failures release held input. Mouse and keyboard actions are guarded by the selected Roblox client and reference client bounds; scrolling also requires the pointer inside that client.
-
 
 
 ## Select an icon
 
 
-
 Choose Icon beside Macro name. The preview shows the bundled image. The saved definition contains an `icon` identifier: `pantheon`, `dungeons`, `progressive`, `raids`, `challenges` or `winter`. This is preserved when copying, shipping and importing a configuration. Missing icons use Pantheon. External image URLs and file paths are not accepted.
-
 
 
 ## Share a configuration
 
 
-
-Copy macro configuration exports plain JSON to the clipboard. It contains the macro definition, captured FindText patterns, settings controls, defaults, option mappings and starting sequence. It does not include the user's saved selections, private-server link, webhook URL, session token or machine paths. No AHK source, process command or arbitrary function reference can be imported.
-
+Export macro saves a JSON file or copies the configuration to the clipboard. It contains the macro definition, captured FindText patterns, settings controls, defaults, option mappings and starting sequence. It does not include the user's saved selections, private-server link, webhook URL, session token or machine paths. No AHK source, process command or arbitrary function reference can be imported.
 
 
 Another user chooses Import macro on the dashboard, pastes the text, reviews the name, game, run policy and action summary, then adds it to the dashboard. The imported macro has independent settings. Import cannot overwrite an existing identity. Authoring remains behind Developer mode; installing and running a reviewed configuration does not require enabling the editor.
 
 
-
 Definitions are restricted data, not a guarantee that somebody else's in-game actions are desirable. Review the sequences before running community configurations. The runtime does not provide an arbitrary file, network, shell, or script action.
-
 
 
 ## Ship definitions with Pantheon
 
 
-
 Maintainers can save an exported configuration under `macros/<id>.json`, using the exported `macro-...` identity as the filename. The normal package builder includes these files. They are loaded through the same definition validation and fixed worker. Local edits are stored separately under `data/macros` so the supplied definition is preserved.
-
 
 
 Authored definitions live in `data/macros/<id>.json`, with user values under `data/macros/settings`. Per-run definitions and settings are copied into `data/sessions`. These personal folders are excluded from releases. Text exchange needs no Pantheon-operated hosting service; short lookup codes and community discovery would require a separate design.
 
 
-
 New image captures search the full Roblox client by default. The cropped pixels define the pattern, not its allowed location. For scrolling menus, keep the search area covering the list or use Search full client. Previously captured targets retain their saved search bounds until changed.
-
 
 ## Shared placements and camera
 
@@ -153,3 +121,11 @@ Four components simplify common patterns:
 - **Run sequence from setting**: map each dropdown option to an existing sequence. For After Victory, map Retry to a Replay sequence, Return To Lobby to a Lobby sequence, and Next Act to a Next sequence. Those sequences can contain their availability checks and Lobby fallbacks. Every option needs a mapping; recursive sequence calls are rejected.
 
 Existing macros are not rewritten automatically. Their original steps continue to work, so simplify and test one sequence at a time.
+
+### Read text into textbox
+
+Add this component to a sequence. Select the text region in Roblox, then select the textbox position. Choose digits, letters and digits, or plain text, and set accepted length limits. Digits mode rejects letters before removing punctuation. Spaces can be removed, and existing textbox content can be replaced. Invalid recognition stops with an error or continues without typing, according to the component setting. It does not submit automatically; add a key press or button click afterward. Recognition uses installed Windows OCR languages and visible Roblox client pixels; no external OCR service or clipboard is used.
+
+### Handle match result
+
+Use one Handle match result component after placements. Configure Victory and Defeat images, a shared Next/reward dismissal target (optional for games without reward clicks), the Lobby button, optional Replay/Next stage buttons, and separate lobby-ready and match-ready images. Choose the action after each outcome or select a player dropdown whose options map to these button images. Missing Replay/Next falls back to Lobby. The handler counts the result, dismisses rewards until Lobby appears, clicks the chosen available button and confirms the menu closed and destination became ready. It then continues the next sequence step; your enclosing match loop controls further matches. Managed upgrades run during result detection. Timing is grouped separately. Legacy custom result branches remain available under Advanced result handling; Replace branches with simple result handler creates an unsaved replacement to review.

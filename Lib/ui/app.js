@@ -52,7 +52,7 @@
 
       const id=crypto.randomUUID();
 
-      const timeout=setTimeout(()=>{pending.delete(id);reject(Error('Pantheon did not respond.'));},['chooseFolder','importPlacementFrame','developerExport','developerSelect','developerPickPoint','placementPickPoint'].includes(action)?300000:['startEngine','testWebhook','developerTest'].includes(action)?30000:12000);
+      const timeout=setTimeout(()=>{pending.delete(id);reject(Error('Pantheon did not respond.'));},['chooseFolder','importPlacementFrame','developerExport','developerSelect','developerPickPoint','placementPickPoint','macroExport'].includes(action)?300000:['startEngine','testWebhook','developerTest'].includes(action)?30000:12000);
 
       pending.set(id,{resolve,reject,timeout});
 
@@ -66,6 +66,75 @@
 
     const r=e.data;if(r?.event==='error'){toast(r.message,true);return;}const p=pending.get(r?.id);if(!p)return;clearTimeout(p.timeout);pending.delete(r.id);r.ok?p.resolve(r.data):p.reject(Error(r.error||'The action could not be completed.'));
 
+  });
+
+  let availableUpdate = '';
+  async function checkUpdates(quiet=false) {
+    const check = $('update-check');
+    if (check.disabled) return;
+    check.disabled = true;
+    $('update-install').hidden = true;
+    $('update-release-notes').hidden = true;
+    $('update-indicator').hidden = true;
+    availableUpdate = '';
+    const status = $('update-status');
+    if (!quiet) {
+      status.hidden = false;
+      setText('update-status','Checking for updates…');
+    }
+    try {
+      const result = await request('updateCheck');
+      availableUpdate = result.version || '';
+      const message = availableUpdate
+        ? 'Pantheon '+availableUpdate+' is available.'+(result.canInstall?'':' Download it from the official releases page.')
+        : 'Pantheon is up to date.';
+      setText('update-status',message);
+      status.hidden = quiet && !availableUpdate;
+      $('update-install').hidden = !availableUpdate || !result.canInstall;
+      $('update-release-notes').hidden = !availableUpdate;
+      $('update-indicator').hidden = !availableUpdate;
+      if (!quiet && !availableUpdate) toast(message);
+    } catch (error) {
+      setText('update-status',error.message);
+      status.hidden = quiet;
+    } finally {
+      check.disabled = false;
+    }
+  }
+
+  $('update-check').addEventListener('click',()=>checkUpdates());
+  $('update-indicator').addEventListener('click',()=>{
+    location.hash = 'settings';
+    requestAnimationFrame(()=>$('app-updates').scrollIntoView({block:'center'}));
+  });
+  $('update-release-notes').addEventListener('click',async()=>{
+    try { await request('updateReleaseNotes'); }
+    catch (error) { toast(error.message,true); }
+  });
+  $('update-install').addEventListener('click',async()=>{
+    const install = $('update-install');
+    if (!availableUpdate || install.disabled) return;
+    if (trackDirty()) {
+      toast('Save or discard your changes before updating.',true);
+      return;
+    }
+    install.disabled = true;
+    $('update-check').disabled = true;
+    try {
+      if (!await confirmAction('Update to Pantheon '+availableUpdate+'?', 'Pantheon will restart in this folder. Your saved macros, preferences and placements will be kept.', 'Update and restart')) return;
+      await preferenceQueue;
+      if (trackDirty()) throw Error('Save or discard your changes before updating.');
+      const result = await request('updateInstall');
+      if (result.installing) {
+        setText('update-status','Installing update. Pantheon will reopen when it is ready.');
+        return;
+      }
+    } catch (error) {
+      toast(error.message,true);
+    } finally {
+      install.disabled = false;
+      $('update-check').disabled = false;
+    }
   });
 
   async function previewRequest(action,data,macro) {
@@ -519,6 +588,8 @@
       route(location.hash.slice(1)||'dashboard');
 
       setInterval(()=>{if(!document.hidden&&!busy)refreshSnapshot();},1200);
+      if(native)checkUpdates(true);
+      else $('app-updates').hidden=true;
 
     }catch(e){$('connection-banner').hidden=false;$('connection-banner').textContent='Pantheon could not load: '+e.message;toast(e.message,true);}
 

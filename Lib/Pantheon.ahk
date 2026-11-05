@@ -1,6 +1,7 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 #Include %A_LineFile%\..\HubModel.ahk
+#Include %A_LineFile%\..\Updates.ahk
 #Include %A_LineFile%\..\Desktop.ahk
 #Include %A_LineFile%\..\WindowFrame.ahk
 #Include %A_LineFile%\..\RunSettings.ahk
@@ -91,6 +92,9 @@ HandleMessage(sender, args) {
         id := m["id"]
         action := m["action"]
         switch action {
+            case "updateCheck": result := PantheonUpdates.Check()
+            case "updateInstall": result := PantheonUpdates.Install()
+            case "updateReleaseNotes": result := PantheonUpdates.OpenReleaseNotes()
             case "snapshot":
                 result := MacroHub.Snapshot()
             case "loadRunSettings": result := RunSettings.Load(m["mode"])
