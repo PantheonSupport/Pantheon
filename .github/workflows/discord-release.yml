@@ -17,6 +17,11 @@ jobs:
                   RELEASE_BODY: ${{ github.event.release.body }}
                   REPO_NAME: ${{ github.repository }}
               run: |
+                  if [ -z "$DISCORD_WEBHOOK" ]; then
+                    echo "::error::DISCORD_WEBHOOK secret is not set! Go to Settings -> Secrets and variables -> Actions to add it."
+                    exit 1
+                  fi
+
                   PAYLOAD=$(jq -n \
                     --arg title "$RELEASE_TITLE" \
                     --arg tag "$RELEASE_TAG" \
