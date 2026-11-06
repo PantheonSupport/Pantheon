@@ -76,20 +76,122 @@ class RunSettings {
         HubRegistry.Write(this.Key(mode), values, "run-" mode)
         return Map("values", values)
     }
+    static WebhookTargetUrl(url) {
+        clean := Trim(url)
+        if !InStr(clean, "with_components=true")
+            clean .= InStr(clean, "?") ? "&with_components=true" : "?with_components=true"
+        return clean
+    }
+    static NormalizeEvent(event) {
+        low := StrLower(event)
+        for name in ["Completed", "Loss", "Disconnect", "Reconnect", "Stopping", "Shop"] {
+            if StrLower(name) == low
+                return name
+        }
+        return event
+    }
+    static EventTitle(event) {
+        titles := Map(
+            "Completed", "Stage Completed",
+            "Loss", "Stage Lost",
+            "Disconnect", "Disconnected",
+            "Reconnect", "Reconnected",
+            "Stopping", "Dungeon Entry Failed",
+            "Shop", "Shop"
+        )
+        norm := this.NormalizeEvent(event)
+        return titles.Has(norm) ? titles[norm] : event
+    }
+    static BuildPayload(title, description := "", ping := false, userId := "", pserverUrl := "", customButtons := 0) {
+        content := title
+        if description != ""
+            content .= "`n`n" description
+        buttons := []
+        if customButtons is Array && customButtons.Length > 0 {
+            for b in customButtons
+                buttons.Push(b)
+        } else {
+            buttons.Push(Map("type", 2, "style", 5, "label", "GitHub Repository", "url", "https://github.com/PantheonSupport/Pantheon"))
+            if pserverUrl != ""
+                buttons.Push(Map("type", 2, "style", 5, "label", "Private Server", "url", pserverUrl))
+            else
+                buttons.Push(Map("type", 2, "style", 5, "label", "Releases", "url", "https://github.com/PantheonSupport/Pantheon/releases"))
+        }
+        container := Map(
+            "type", 17,
+            "components", [
+                Map("type", 10, "content", content),
+                Map("type", 14, "divider", JSON.true, "spacing", 1),
+                Map("type", 1, "components", buttons)
+            ]
+        )
+        components := [container]
+        hasPing := ping && userId != ""
+        if hasPing
+            components.Push(Map("type", 10, "content", "-# ||<@" userId ">||"))
+        mentions := Map("parse", [], "users", hasPing ? [userId] : [])
+        return Map(
+            "flags", 32768,
+            "allowed_mentions", mentions,
+            "components", components
+        )
+    }
+    static SendPayload(url, payload, throwOnError := true) {
+        targetUrl := this.WebhookTargetUrl(url)
+        request := ComObject("WinHttp.WinHttpRequest.5.1")
+        request.SetTimeouts(5000, 5000, 5000, 10000)
+        request.Open("POST", targetUrl, false)
+        request.Option[6] := false
+        request.SetRequestHeader("Content-Type", "application/json")
+        try {
+            request.Send(JSON.stringify(payload))
+            if request.Status < 200 || request.Status >= 300 {
+                if throwOnError
+                    throw Error("Webhook test failed (HTTP " request.Status ").")
+                return false
+            }
+            return true
+        } catch as err {
+            if throwOnError
+                throw err
+            return false
+        }
+    }
     static TestWebhook() {
         values := this.Load("general")["values"]
         if values["WebhookURL"] == ""
             throw Error("Save a webhook URL first.")
-        request := ComObject("WinHttp.WinHttpRequest.5.1")
-        request.SetTimeouts(5000, 5000, 5000, 10000)
-        request.Open("POST", values["WebhookURL"], false)
-        request.Option[6] := false
-        request.SetRequestHeader("Content-Type", "application/json")
         ping := values["PingE"] && values["UserID"] != ""
-        mentions := Map("parse", [], "users", ping ? [values["UserID"]] : [])
-        request.Send(JSON.stringify(Map("content", "Pantheon webhook test" (ping ? " <@" values["UserID"] ">" : ""), "allowed_mentions", mentions)))
-        if request.Status < 200 || request.Status >= 300
-            throw Error("Webhook test failed (HTTP " request.Status ").")
+        title := "# Pantheon Webhook Test"
+        description := "Webhook test message sent from Pantheon. Discord Components V2 integration is active."
+        payload := this.BuildPayload(title, description, ping, values["UserID"], values.Get("PServerURL", ""))
+        this.SendPayload(values["WebhookURL"], payload, true)
         return Map("message", "Webhook test sent.")
     }
+    static Dispatch(event, details := "", throwOnError := false) {
+        event := this.NormalizeEvent(event)
+        values := this.Load("general")["values"]
+        if !values["WebhookE"] || values["WebhookURL"] == ""
+            return false
+        hookKey := "Webhook" event "E"
+        if values.Has(hookKey) && !values[hookKey]
+            return false
+        pingKey := "Ping" event "E"
+        ping := values["PingE"] && values["UserID"] != "" && (values.Has(pingKey) ? values[pingKey] : false)
+        title := "# Pantheon: " this.EventTitle(event)
+        if details is Map {
+            desc := ""
+            for k, v in details
+                desc .= (desc == "" ? "" : "`n") "**" k ":** " v
+            description := desc
+        } else if details is String && details != "" {
+            description := details
+        } else {
+            description := "Status update: " this.EventTitle(event)
+        }
+        payload := this.BuildPayload(title, description, ping, values["UserID"], values.Get("PServerURL", ""))
+        return this.SendPayload(values["WebhookURL"], payload, throwOnError)
+    }
+    static SendEvent(event, details := "", throwOnError := false) => this.Dispatch(event, details, throwOnError)
+    static DispatchEvent(event, details := "", throwOnError := false) => this.Dispatch(event, details, throwOnError)
 }
