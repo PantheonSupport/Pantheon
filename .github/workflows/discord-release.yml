@@ -56,7 +56,7 @@ jobs:
                           components: [
                             {
                               type: 10,
-                              content: "<@&\($role)>\n\n# New Release: \($title)\n**Repository:** `\($repo)` • **Tag:** `\($tag)`\n\n" + (if $desc != "" then $desc else "*No release notes provided.*" end)
+                              content: "# New Release: \($title)\n**Repository:** `\($repo)` • **Tag:** `\($tag)`\n\n" + (if $desc != "" then $desc else "*No release notes provided.*" end) + "\n\n||<@&\($role)>||"
                             },
                             {
                               type: 14,
