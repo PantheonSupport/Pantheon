@@ -25,6 +25,7 @@ jobs:
             - name: Send Discord V2 Component Webhook
               env:
                   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+                  DISCORD_ROLE_ID: '1568086848314671214'
                   RELEASE_TITLE: ${{ inputs.title || github.event.release.name || github.event.release.tag_name }}
                   RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
                   RELEASE_URL: ${{ github.event.release.html_url || format('https://github.com/{0}/releases', github.repository) }}
@@ -42,15 +43,20 @@ jobs:
                     --arg url "$RELEASE_URL" \
                     --arg desc "${RELEASE_BODY:0:1000}" \
                     --arg repo "$REPO_NAME" \
+                    --arg role "$DISCORD_ROLE_ID" \
                     '{
                       flags: 32768,
+                      allowed_mentions: {
+                        parse: [],
+                        roles: [$role]
+                      },
                       components: [
                         {
                           type: 17,
                           components: [
                             {
                               type: 10,
-                              content: "# New Release: \($title)\n**Repository:** `\($repo)` • **Tag:** `\($tag)`\n\n" + (if $desc != "" then $desc else "*No release notes provided.*" end)
+                              content: "<@&\($role)>\n\n# New Release: \($title)\n**Repository:** `\($repo)` • **Tag:** `\($tag)`\n\n" + (if $desc != "" then $desc else "*No release notes provided.*" end)
                             },
                             {
                               type: 14,
