@@ -54,7 +54,9 @@ jobs:
                               content: "# 🚀 New Release: \($title)\n**Repository:** `\($repo)` • **Tag:** `\($tag)`\n\n" + (if $desc != "" then $desc else "*No release notes provided.*" end)
                             },
                             {
-                              type: 14
+                              type: 14,
+                              divider: true,
+                              spacing: 1
                             },
                             {
                               type: 1,
@@ -78,11 +80,20 @@ jobs:
                       ]
                     }')
 
+                  TARGET_URL="$DISCORD_WEBHOOK"
+                  if [[ "$TARGET_URL" != *"with_components=true"* ]]; then
+                    if [[ "$TARGET_URL" == *"?"* ]]; then
+                      TARGET_URL="${TARGET_URL}&with_components=true"
+                    else
+                      TARGET_URL="${TARGET_URL}?with_components=true"
+                    fi
+                  fi
+
                   HTTP_CODE=$(curl -s -o /tmp/discord_response.txt -w "%{http_code}" \
                        -H "Content-Type: application/json" \
                        -X POST \
                        -d "$PAYLOAD" \
-                       "$DISCORD_WEBHOOK")
+                       "$TARGET_URL")
 
                   echo "Discord response code: $HTTP_CODE"
                   if [ "$HTTP_CODE" -ge 400 ]; then
