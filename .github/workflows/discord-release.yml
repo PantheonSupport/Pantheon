@@ -32,7 +32,7 @@ jobs:
                           components: [
                             {
                               type: 10,
-                              content: "# 🚀 New Release: \($title)\n**Repository:** `\($repo)` • **Tag:** `\($tag)`\n\n" + (if $desc != "" then $desc else "*No release notes provided.*")
+                              content: "# 🚀 New Release: \($title)\n**Repository:** `\($repo)` • **Tag:** `\($tag)`\n\n" + (if $desc != "" then $desc else "*No release notes provided.*" end)
                             },
                             {
                               type: 14
@@ -59,8 +59,15 @@ jobs:
                       ]
                     }')
 
-                  curl -s -o /dev/null -w "%{http_code}\n" \
+                  HTTP_CODE=$(curl -s -o /tmp/discord_response.txt -w "%{http_code}" \
                        -H "Content-Type: application/json" \
                        -X POST \
                        -d "$PAYLOAD" \
-                       "$DISCORD_WEBHOOK"
+                       "$DISCORD_WEBHOOK")
+
+                  echo "Discord response code: $HTTP_CODE"
+                  if [ "$HTTP_CODE" -ge 400 ]; then
+                    echo "Discord returned an error:"
+                    cat /tmp/discord_response.txt
+                    exit 1
+                  fi
