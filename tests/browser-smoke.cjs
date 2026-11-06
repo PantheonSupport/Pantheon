@@ -58,6 +58,8 @@ let ws;
         case 'startEngine':state.engine={state:'running',active:1,logs:['Running']};break;
         case 'pauseEngine':state.engine.state=state.engine.state==='running'?'paused':'running';break;
         case 'stopEngine':state.engine={state:'stopped',active:0,logs:[]};break;
+        case 'testWebhook':data={message:'Webhook test sent.'};break;
+        case 'dispatchWebhook':data={ok:true};break;
       }
       setTimeout(()=>handlers.forEach(fn=>fn({data:{id:m.id,ok:1,data}})),0);
     }};
@@ -69,7 +71,7 @@ let ws;
   const click=async selector=>{await activate(selector);return evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);};
   const change=async(selector,value)=>{await activate(selector);return evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(selector)});el.value=${JSON.stringify(value)};el.dispatchEvent(new Event('change',{bubbles:true}));})()`);};
   const shot=async name=>{const r=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(out,name),Buffer.from(r.data,'base64'));};
-  const loaded=new Promise(resolve=>{const onMessage=event=>{const m=JSON.parse(event.data);if(m.method==='Page.loadEventFired'){ws.removeEventListener('message',onMessage);resolve();}};ws.addEventListener('message',onMessage);});
+  const loaded=new Promise((resolve,reject)=>{const timer=setTimeout(()=>{ws.removeEventListener('message',onMessage);reject(Error('Navigation loadEventFired timed out.'));},15000);const onMessage=event=>{const m=JSON.parse(event.data);if(m.method==='Page.loadEventFired'){clearTimeout(timer);ws.removeEventListener('message',onMessage);resolve();}};ws.addEventListener('message',onMessage);});
   await call('Page.navigate',{url:pathToFileURL(path.join(root,'Lib/ui/index.html')).href});
   await loaded;
   await until("!document.querySelector('#page-dashboard').hidden");

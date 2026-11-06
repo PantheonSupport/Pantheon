@@ -100,6 +100,7 @@ HandleMessage(sender, args) {
             case "loadRunSettings": result := RunSettings.Load(m["mode"])
             case "saveRunSettings": result := RunSettings.Save(m["mode"], m["data"])
             case "testWebhook": result := RunSettings.TestWebhook()
+            case "dispatchWebhook": result := RunSettings.Dispatch(m.Has("event") ? m["event"] : "", m.Has("details") ? m["details"] : "", true)
             case "preferences":
                 result := MacroHub.SavePreferences(m["data"])
                 if !result["developer"]

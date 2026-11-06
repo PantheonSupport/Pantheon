@@ -78,9 +78,13 @@ class RunSettings {
     }
     static WebhookTargetUrl(url) {
         clean := Trim(url)
-        if !InStr(clean, "with_components=true")
-            clean .= InStr(clean, "?") ? "&with_components=true" : "?with_components=true"
-        return clean
+        if InStr(clean, "with_components=true")
+            return clean
+        if !InStr(clean, "?")
+            return clean "?with_components=true"
+        if SubStr(clean, -1) == "?" || SubStr(clean, -1) == "&"
+            return clean "with_components=true"
+        return clean "&with_components=true"
     }
     static NormalizeEvent(event) {
         low := StrLower(event)
@@ -105,11 +109,21 @@ class RunSettings {
     static BuildPayload(title, description := "", ping := false, userId := "", pserverUrl := "", customButtons := 0) {
         content := title
         if description != ""
-            content .= "`n`n" description
+            content .= (content == "" ? "" : "`n`n") description
+        hasPing := ping && userId != ""
+        if hasPing
+            content .= (content == "" ? "" : "`n`n") "<@" userId ">"
+        if content == ""
+            content := "Pantheon Notification"
+        if StrLen(content) > 4000
+            content := SubStr(content, 1, 3997) "..."
         buttons := []
         if customButtons is Array && customButtons.Length > 0 {
-            for b in customButtons
+            for b in customButtons {
+                if buttons.Length >= 5
+                    break
                 buttons.Push(b)
+            }
         } else {
             buttons.Push(Map("type", 2, "style", 5, "label", "GitHub Repository", "url", "https://github.com/PantheonSupport/Pantheon"))
             if pserverUrl != ""
@@ -125,15 +139,11 @@ class RunSettings {
                 Map("type", 1, "components", buttons)
             ]
         )
-        components := [container]
-        hasPing := ping && userId != ""
-        if hasPing
-            components.Push(Map("type", 10, "content", "-# ||<@" userId ">||"))
         mentions := Map("parse", [], "users", hasPing ? [userId] : [])
         return Map(
             "flags", 32768,
             "allowed_mentions", mentions,
-            "components", components
+            "components", [container]
         )
     }
     static SendPayload(url, payload, throwOnError := true) {
@@ -147,7 +157,7 @@ class RunSettings {
             request.Send(JSON.stringify(payload))
             if request.Status < 200 || request.Status >= 300 {
                 if throwOnError
-                    throw Error("Webhook test failed (HTTP " request.Status ").")
+                    throw Error("Webhook request failed (HTTP " request.Status ").")
                 return false
             }
             return true
@@ -159,9 +169,9 @@ class RunSettings {
     }
     static TestWebhook() {
         values := this.Load("general")["values"]
-        if values["WebhookURL"] == ""
+        if values.Get("WebhookURL", "") == ""
             throw Error("Save a webhook URL first.")
-        ping := values["PingE"] && values["UserID"] != ""
+        ping := values.Get("PingE", 0) && values.Get("UserID", "") != ""
         title := "# Pantheon Webhook Test"
         description := "Webhook test message sent from Pantheon. Discord Components V2 integration is active."
         payload := this.BuildPayload(title, description, ping, values["UserID"], values.Get("PServerURL", ""))
@@ -171,18 +181,23 @@ class RunSettings {
     static Dispatch(event, details := "", throwOnError := false) {
         event := this.NormalizeEvent(event)
         values := this.Load("general")["values"]
-        if !values["WebhookE"] || values["WebhookURL"] == ""
+        if !values.Get("WebhookE", 0) || values.Get("WebhookURL", "") == ""
             return false
         hookKey := "Webhook" event "E"
         if values.Has(hookKey) && !values[hookKey]
             return false
         pingKey := "Ping" event "E"
-        ping := values["PingE"] && values["UserID"] != "" && (values.Has(pingKey) ? values[pingKey] : false)
+        ping := values.Get("PingE", 0) && values.Get("UserID", "") != "" && (values.Has(pingKey) ? values[pingKey] : false)
         title := "# Pantheon: " this.EventTitle(event)
         if details is Map {
             desc := ""
             for k, v in details
                 desc .= (desc == "" ? "" : "`n") "**" k ":** " v
+            description := desc
+        } else if details is Array {
+            desc := ""
+            for item in details
+                desc .= (desc == "" ? "" : "`n") "• " item
             description := desc
         } else if details is String && details != "" {
             description := details

@@ -7,6 +7,8 @@ try {
     Assert(RunSettings.WebhookTargetUrl("https://discord.com/api/webhooks/1/abc") == "https://discord.com/api/webhooks/1/abc?with_components=true", "appends query param")
     Assert(RunSettings.WebhookTargetUrl("https://discord.com/api/webhooks/1/abc?wait=true") == "https://discord.com/api/webhooks/1/abc?wait=true&with_components=true", "appends with ampersand")
     Assert(RunSettings.WebhookTargetUrl("https://discord.com/api/webhooks/1/abc?with_components=true") == "https://discord.com/api/webhooks/1/abc?with_components=true", "preserves existing param")
+    Assert(RunSettings.WebhookTargetUrl("https://discord.com/api/webhooks/1/abc?") == "https://discord.com/api/webhooks/1/abc?with_components=true", "handles trailing question mark")
+    Assert(RunSettings.WebhookTargetUrl("https://discord.com/api/webhooks/1/abc?wait=true&") == "https://discord.com/api/webhooks/1/abc?wait=true&with_components=true", "handles trailing ampersand")
     Assert(RunSettings.WebhookTargetUrl("  https://discord.com/api/webhooks/1/abc  ") == "https://discord.com/api/webhooks/1/abc?with_components=true", "trims url")
 
     Assert(RunSettings.NormalizeEvent("completed") == "Completed", "normalizes lower case")
@@ -22,7 +24,7 @@ try {
     Assert(payloadWithoutPing["flags"] == 32768, "flags match IS_COMPONENTS_V2")
     Assert(payloadWithoutPing["allowed_mentions"]["users"].Length == 0, "no ping users when ping disabled")
     Assert(payloadWithoutPing["allowed_mentions"]["parse"].Length == 0, "allowed mentions parse is empty")
-    Assert(payloadWithoutPing["components"].Length == 1, "only container when ping disabled")
+    Assert(payloadWithoutPing["components"].Length == 1, "only container component")
 
     container := payloadWithoutPing["components"][1]
     Assert(container["type"] == 17, "container type is 17")
@@ -46,11 +48,20 @@ try {
     Assert(serverRow["components"][2]["url"] == "https://roblox.com/games/123/?privateServerLinkCode=abcdef0123456789abcdef0123456789", "uses private server url")
 
     payloadWithPing := RunSettings.BuildPayload("Title", "Description", true, "123456789012345678", "")
-    Assert(payloadWithPing["components"].Length == 2, "container and ping text component")
-    Assert(payloadWithPing["components"][2]["type"] == 10, "ping component is text display")
-    Assert(payloadWithPing["components"][2]["content"] == "-# ||<@123456789012345678>||", "ping component content matches spoiler format")
+    Assert(payloadWithPing["components"].Length == 1, "only container component even with ping")
+    pingContainer := payloadWithPing["components"][1]
+    Assert(pingContainer["components"][1]["type"] == 10, "ping is inside text display")
+    Assert(pingContainer["components"][1]["content"] == "Title`n`nDescription`n`n<@123456789012345678>", "text content includes user ping")
     Assert(payloadWithPing["allowed_mentions"]["users"].Length == 1, "allowed mentions contains user id")
     Assert(payloadWithPing["allowed_mentions"]["users"][1] == "123456789012345678", "allowed mentions user id matches")
+
+    payloadEmpty := RunSettings.BuildPayload("", "")
+    Assert(payloadEmpty["components"][1]["components"][1]["content"] == "Pantheon Notification", "empty payload falls back to non-empty content")
+
+    customBtn := [Map("type", 2, "style", 5, "label", "Custom", "url", "https://example.com")]
+    payloadCustom := RunSettings.BuildPayload("T", "D", false, "", "", customBtn)
+    Assert(payloadCustom["components"][1]["components"][3]["components"].Length == 1, "custom buttons preserved")
+    Assert(payloadCustom["components"][1]["components"][3]["components"][1]["label"] == "Custom", "custom button label")
 
     jsonText := JSON.stringify(payloadWithPing)
     Assert(InStr(jsonText, '"flags":32768') || InStr(jsonText, '"flags": 32768'), "serialized json includes flags")

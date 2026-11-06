@@ -15,7 +15,14 @@ test('RunSettings implements Discord Components V2 structure and URL formatting'
   assert.ok(ahk.includes('allowed_mentions'));
   assert.ok(ahk.includes('TestWebhook()'));
   assert.ok(ahk.includes('Dispatch('));
+  assert.ok(ahk.includes('SendEvent('));
+  assert.ok(ahk.includes('DispatchEvent('));
   assert.ok(!ahk.includes(';'));
+
+  const hubAhk=read('Lib/Pantheon.ahk');
+  assert.ok(hubAhk.includes('case "dispatchWebhook":'));
+  assert.ok(hubAhk.includes('case "testWebhook":'));
+  assert.ok(!hubAhk.includes(';'));
 });
 
 test('run settings schema defines all supported event webhook and ping toggles',()=>{
